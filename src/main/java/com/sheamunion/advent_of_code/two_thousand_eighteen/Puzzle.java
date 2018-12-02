@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class Puzzle {
@@ -16,7 +18,22 @@ public class Puzzle {
     public Integer answer(String inputFileName) {
         List<Integer> frequencyChanges = getInputFromFileName(inputFileName);
 
-        return frequencyChanges.stream().reduce((a,b) -> (a + b)).get();
+        int currentFrequency = 0;
+        Set<Integer> frequenciesSeen = new HashSet<>();
+        boolean isNotDuplicateFrequency = true;
+
+        while (isNotDuplicateFrequency) {
+            for (int delta : frequencyChanges) {
+                currentFrequency = currentFrequency + delta;
+                if (!frequenciesSeen.add(currentFrequency)) {
+                    isNotDuplicateFrequency = false;
+                    break;
+                }
+                frequenciesSeen.add(currentFrequency);
+            }
+        }
+
+        return currentFrequency;
     }
 
     private List<Integer> getInputFromFileName(String inputFileName) {
