@@ -1,6 +1,6 @@
-package main.java.com.sheamunion.advent_of_code;
+package com.sheamunion.advent_of_code;
 
-import main.java.com.sheamunion.advent_of_code.two_thousand_eighteen.Puzzle;
+import com.sheamunion.advent_of_code.two_thousand_eighteen.Puzzle;
 
 public class Main {
 
@@ -12,7 +12,7 @@ public class Main {
             case 1:
                 inputFileName = args[0];
             default:
-                inputFileName = "day_one.txt";
+                inputFileName = "day_two.txt";
         }
 
         System.out.printf("Answer: %d", puzzle.answer(inputFileName));
