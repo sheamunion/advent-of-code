@@ -4,65 +4,42 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
 
 public class Puzzle {
 
-    public Integer answer(String inputFileName) {
+    public String answer(String inputFileName) {
         List<String> boxIds = getInputFromFileName(inputFileName);
+        String matchingLetters = null;
 
-        Integer twiceCount = boxIds.stream()
-                .filter(this::hasLetterExactlyTwice)
-                .collect(Collectors.toList())
-                .size();
-
-        Integer thriceCount = boxIds.stream()
-                .filter(this::hasLetterExactlyThrice)
-                .collect(Collectors.toList())
-                .size();
-
-        return twiceCount * thriceCount;
-    }
-
-    public boolean hasLetterExactlyTwice(String id) {
-        Map<String, Integer> frequency = toHistogram(id);
-
-        boolean appearsExactlyTwice = false;
-        for (String key : frequency.keySet()) {
-            if (frequency.get(key) == 2) {
-                appearsExactlyTwice = true;
-                break;
+        for (int i = 0; i < boxIds.size(); i++) {
+            for (int j = i + 1; j < boxIds.size(); j++) {
+                matchingLetters = findMatch(boxIds.get(i), boxIds.get(j));
+                if (matchingLetters!=null) {
+                    return matchingLetters;
+                }
             }
         }
-        return appearsExactlyTwice;
+
+        return null;
     }
 
-    public boolean hasLetterExactlyThrice(String id) {
-        Map<String, Integer> frequency = toHistogram(id);
+    private String findMatch(String first, String second) {
+        System.out.printf("Comparing %s to %s%n", first, second);
+        int idSize = first.length();
+        List<String> matchingChars = new ArrayList<>();
 
-        boolean appearsExactlyThrice = false;
-        for (String key : frequency.keySet()) {
-            if (frequency.get(key) == 3) {
-                appearsExactlyThrice = true;
-                break;
+        for (int k = 0; k < idSize; k++) {
+            if (first.charAt(k) == second.charAt(k)) {
+                matchingChars.add(String.valueOf(first.charAt(k)));
+            }
+            if (matchingChars.size() == idSize - 1) {
+                return matchingChars.stream().map(Object::toString).collect(Collectors.joining(""));
             }
         }
-        return appearsExactlyThrice;
-    }
-
-    private Map<String, Integer> toHistogram(String id) {
-        Map<String, Integer> frequency = new HashMap<>();
-        Arrays.stream(id.split(""))
-                .forEach(el -> {
-                    Integer count = frequency.get(el);
-                    if (count == null) {
-                        frequency.put(el, 1);
-                    } else {
-                        frequency.put(el, count + 1);
-                    }
-                });
-        return frequency;
+        return null;
     }
 
     private List<String> getInputFromFileName(String inputFileName) {

@@ -15,6 +15,6 @@ public class Main {
                 inputFileName = "day_two.txt";
         }
 
-        System.out.printf("Answer: %d", puzzle.answer(inputFileName));
+        System.out.printf("Answer: %s", puzzle.answer(inputFileName));
     }
 }
