@@ -12,7 +12,7 @@ public class Main {
             case 1:
                 inputFileName = args[0];
             default:
-                inputFileName = "day_two.txt";
+                inputFileName = "day_three.txt";
         }
 
         System.out.printf("Answer: %s", puzzle.answer(inputFileName));
