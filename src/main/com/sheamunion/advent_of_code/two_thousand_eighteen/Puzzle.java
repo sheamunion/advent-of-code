@@ -14,37 +14,53 @@ import java.util.regex.Pattern;
 public class Puzzle {
 
     public String answer(String inputFileName) {
+        String answer = "";
         Map<Integer, Map<String, Integer>> claims = getInputFromFileName(inputFileName);
-        Map<List<Integer>, Integer> overlapCount = new HashMap<>();
+        Map<List<Integer>, Integer> claimsToOverlapCount = new HashMap<>();
 
         for (Map.Entry<Integer, Map<String, Integer>> claim : claims.entrySet()) {
             Map<String, Integer> dimensions = claim.getValue();
-            int x = dimensions.get("x");
-            int y = dimensions.get("y");
 
             for (int h = 1; h <= dimensions.get("height"); h++) {
                 for (int w = 1; w <= dimensions.get("width"); w++) {
-                    List<Integer> newCoords = new ArrayList<>();
-                    newCoords.add((x + w));
-                    newCoords.add((y + h));
+                    List<Integer> newCoords = getNewCoords(dimensions.get("x"), dimensions.get("y"), h, w);
 
-                    if (overlapCount.get(newCoords) == null) {
-                        overlapCount.put(newCoords, 1);
+                    if (claimsToOverlapCount.get(newCoords) == null) {
+                        claimsToOverlapCount.put(newCoords, 1);
                     } else {
-                        overlapCount.put(newCoords, overlapCount.get(newCoords) + 1);
+                        claimsToOverlapCount.put(newCoords, claimsToOverlapCount.get(newCoords) + 1);
                     }
                 }
             }
         }
 
-        int totalOverlappedSquares = 0;
-        for (Map.Entry<List<Integer>, Integer> square : overlapCount.entrySet()) {
-            if (square.getValue() > 1) {
-                totalOverlappedSquares++;
+        for (Map.Entry<Integer, Map<String, Integer>> claim : claims.entrySet()) {
+            if (!doesClaimOverlap(claimsToOverlapCount, claim)) {
+                answer = String.valueOf(claim.getKey());
             }
         }
 
-        return String.valueOf(totalOverlappedSquares);
+        return answer;
+    }
+
+    private List<Integer> getNewCoords(int x, int y, int h, int w) {
+        List<Integer> newCoords = new ArrayList<>();
+        newCoords.add((x + w));
+        newCoords.add((y + h));
+        return newCoords;
+    }
+
+    private boolean doesClaimOverlap(Map<List<Integer>, Integer> overlapCount, Map.Entry<Integer, Map<String, Integer>> claim) {
+        Map<String, Integer> dimensions = claim.getValue();
+        for (int h = 1; h <= dimensions.get("height"); h++) {
+            for (int w = 1; w <= dimensions.get("width"); w++) {
+                List<Integer> newCoords = getNewCoords(dimensions.get("x"), dimensions.get("y"), h, w);
+                if (overlapCount.get(newCoords) > 1) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private Map<Integer, Map<String, Integer>> getInputFromFileName(String inputFileName) {
@@ -78,6 +94,7 @@ public class Puzzle {
                 dimensions.put("y", y);
                 dimensions.put("width", width);
                 dimensions.put("height", height);
+                dimensions.put("hasOverlap", 0);
 
                 try {
                     claims.put(id, dimensions);
