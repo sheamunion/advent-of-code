@@ -1,5 +1,6 @@
 package com.sheamunion.advent_of_code.two_thousand_eighteen;
 
+
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
