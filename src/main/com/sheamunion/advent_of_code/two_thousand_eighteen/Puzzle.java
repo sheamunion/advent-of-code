@@ -7,64 +7,52 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class Puzzle {
 
     public String answer(String inputFileName) {
-
-        String answer = "You're not finished.";
-
         Map<String, String> log = getInputFromFileName(inputFileName);
         TreeMap<String, String> sortedLog = new TreeMap(log);
-        Map<String, List<Integer>> shiftsByGuard = new HashMap<>();
         String guardId = "";
 
-        collectMinutesSleptByGuard(sortedLog, shiftsByGuard, guardId);
+        Map<String, List<Integer>> intervalsOfSleepByGuard = collectIntervalsOfSleepByGuard(sortedLog, guardId);
 
-        Map<Integer, String> guardIdByTotalMinutesSlept = new HashMap<>();
-        calculateMinutesSleptByGuard(shiftsByGuard, guardIdByTotalMinutesSlept);
+        String idOfGuardWhoSleptMost = getIdOfGuardWhoSleptMost(intervalsOfSleepByGuard);
 
-        Integer mostMinutesSlept = guardIdByTotalMinutesSlept.keySet()
-                .stream()
-                .sorted(Integer::compareTo)
-                .collect(Collectors.toList())
-                .get(guardIdByTotalMinutesSlept.keySet().size() - 1);
+        List<Integer> rangeOfMinutesSleptBySleepiestGuard = intervalsOfSleepByGuard.get(idOfGuardWhoSleptMost);
 
-        String idOfGuardWhoSleptMost = guardIdByTotalMinutesSlept.get(mostMinutesSlept);
-        List<Integer> rangeOfMinutesSleptBySleepiestGuard = shiftsByGuard.get(idOfGuardWhoSleptMost);
+        Map<Integer, Integer> asleepDuringMinuteFrequency = getAsleepDuringMinuteFrequency(rangeOfMinutesSleptBySleepiestGuard);
 
-        /*
-        * It appears that I am finding the correct Guard Id.
-        * I don't think I'm finding the correct sleepiest minute.
-        * I need to debug this.
-        * */
+        Integer sleepiestMinute = Collections.max(asleepDuringMinuteFrequency.entrySet(), Comparator.comparingInt(Map.Entry::getValue)).getKey();
 
-        Map<Integer, Integer> minutesSleptFrequency = new HashMap<>();
-        for (int i = 1; i < rangeOfMinutesSleptBySleepiestGuard.size(); i++) {
-            IntStream.rangeClosed(rangeOfMinutesSleptBySleepiestGuard.get(i - 1), rangeOfMinutesSleptBySleepiestGuard.get(i))
-                    .forEach((minute) -> {
-                        Integer currentCount = minutesSleptFrequency.get(minute);
-                        currentCount = currentCount == null ? 1 : currentCount;
-                        minutesSleptFrequency.put(minute, currentCount + 1);
-                    });
-        }
-
-        Integer sleepiestMinute = minutesSleptFrequency.values()
-                .stream()
-                .sorted(Integer::compareTo)
-                .collect(Collectors.toList())
-                .get(minutesSleptFrequency.values().size() - 1);
-
-        System.out.println(idOfGuardWhoSleptMost);
-        System.out.println(sleepiestMinute);
+        System.out.printf("Guard selected: %s%n", idOfGuardWhoSleptMost);
+        System.out.printf("Minute selected: %s%n", sleepiestMinute);
 
         return String.valueOf(Integer.valueOf(idOfGuardWhoSleptMost) * sleepiestMinute);
     }
 
-    private void calculateMinutesSleptByGuard(Map<String, List<Integer>> shiftsByGuard, Map<Integer, String> sumMinutesSleptByGuard) {
+    private String getIdOfGuardWhoSleptMost(Map<String, List<Integer>> intervalsOfSleepByGuard) {
+        Map<Integer, String> guardIdByTotalMinutesSlept = calculateTotalMinutesSleptByGuard(intervalsOfSleepByGuard);
+
+        return Collections.max(guardIdByTotalMinutesSlept.entrySet(), Comparator.comparingInt(Map.Entry::getKey)).getValue();
+    }
+
+    private Map<Integer, Integer> getAsleepDuringMinuteFrequency(List<Integer> rangeOfMinutesSleptBySleepiestGuard) {
+        Map<Integer, Integer> asleepDuringMinuteFrequency = new HashMap<>();
+        for (int i = 1; i < rangeOfMinutesSleptBySleepiestGuard.size(); i++) {
+            IntStream.rangeClosed(rangeOfMinutesSleptBySleepiestGuard.get(i - 1), rangeOfMinutesSleptBySleepiestGuard.get(i))
+                    .forEach((minute) -> {
+                        Integer currentCount = asleepDuringMinuteFrequency.get(minute);
+                        currentCount = currentCount == null ? 0 : currentCount;
+                        asleepDuringMinuteFrequency.put(minute, currentCount + 1);
+                    });
+        }
+        return asleepDuringMinuteFrequency;
+    }
+
+    private Map<Integer, String> calculateTotalMinutesSleptByGuard(Map<String, List<Integer>> shiftsByGuard) {
+        Map<Integer, String> sumMinutesSleptByGuard = new HashMap<>();
         shiftsByGuard.forEach((id, minutes) -> {
             Optional<Integer> sumMinutes = minutes.stream().reduce((a, b) -> b - a);
             if (sumMinutes.isPresent()) {
@@ -73,9 +61,11 @@ public class Puzzle {
                 sumMinutesSleptByGuard.put(0, id);
             }
         });
+        return sumMinutesSleptByGuard;
     }
 
-    private void collectMinutesSleptByGuard(TreeMap<String, String> sortedLog, Map<String, List<Integer>> shiftsByGuard, String guardId) {
+    private Map<String, List<Integer>> collectIntervalsOfSleepByGuard(TreeMap<String, String> sortedLog, String guardId) {
+        Map<String, List<Integer>> shiftsByGuard = new HashMap<>();
         for (Map.Entry<String, String> logEntry : sortedLog.entrySet()) {
 
             String entryData = logEntry.getValue();
@@ -85,17 +75,27 @@ public class Puzzle {
                 shiftsByGuard.putIfAbsent(guardId, new ArrayList<>());
                 continue;
             }
+
             Integer minutes = Integer.valueOf(logEntry.getKey().split(":")[1]);
-            shiftsByGuard.get(guardId).add(minutes);
+
+            if (entryData.contains("sleep")) {
+                shiftsByGuard.get(guardId).add(minutes);
+            } else if (entryData.contains("wake")) {
+                shiftsByGuard.get(guardId).add(minutes - 1);
+            }
         }
+        return shiftsByGuard;
     }
 
     private Map<String, String> getInputFromFileName(String inputFileName) {
         String projectRoot = Paths.get("").toAbsolutePath().toString();
+        String subdir = projectRoot.contains("src") ? "/main/resources/" : "/src/main/resources/";
+
         Path inputFilePath = Paths.get(
                 String.format(
-                        "%s/src/main/resources/%s"
+                        "%s%s%s"
                         , projectRoot
+                        , subdir
                         , inputFileName
                 )
         );
